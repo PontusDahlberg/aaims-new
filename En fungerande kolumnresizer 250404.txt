@@ -1,0 +1,149 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import Sidebar from "./Sidebar";
+import GoogleChat from "./GoogleChat";
+import Header from "./Header";
+import Footer from "./Footer";
+import MainContent from "./MainContent";
+
+export default function DragResizableLayout() {
+  const [leftWidth, setLeftWidth] = useState(250);
+  const [middleWidth, setMiddleWidth] = useState(700);
+  const [topSectionHeight, setTopSectionHeight] = useState(300);
+  const [windowWidth, setWindowWidth] = useState(typeof window !== "undefined" ? window.innerWidth : 1200);
+
+  useEffect(() => {
+    function handleResize() {
+      setWindowWidth(window.innerWidth);
+    }
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  const rightWidth = Math.max(100, windowWidth - leftWidth - middleWidth);
+
+  // === HANDLE LEFT-MIDDLE RESIZE ===
+  const handleLeftMiddleResize = (e) => {
+    e.preventDefault();
+    const startX = e.clientX;
+    const initialLeftWidth = leftWidth;
+    const initialMiddleWidth = middleWidth;
+
+    const onMouseMove = (e) => {
+      const deltaX = e.clientX - startX;
+      let newLeftWidth = initialLeftWidth + deltaX;
+      let newMiddleWidth = initialMiddleWidth - deltaX;
+
+      if (newLeftWidth < 80) newLeftWidth = 80;
+      if (newMiddleWidth < 200) newMiddleWidth = 200;
+
+      setLeftWidth(newLeftWidth);
+      setMiddleWidth(newMiddleWidth);
+    };
+
+    const onMouseUp = () => {
+      document.removeEventListener("mousemove", onMouseMove);
+      document.removeEventListener("mouseup", onMouseUp);
+    };
+
+    document.addEventListener("mousemove", onMouseMove);
+    document.addEventListener("mouseup", onMouseUp);
+  };
+
+  // === HANDLE MIDDLE-RIGHT RESIZE ===
+  const handleMiddleRightResize = (e) => {
+    e.preventDefault();
+    const startX = e.clientX;
+    const initialMiddleWidth = middleWidth;
+
+    const onMouseMove = (e) => {
+      const deltaX = e.clientX - startX;
+      let newMiddleWidth = initialMiddleWidth + deltaX;
+
+      if (newMiddleWidth < 200) newMiddleWidth = 200;
+      const maxMiddleWidth = windowWidth - leftWidth - 100;
+      if (newMiddleWidth > maxMiddleWidth) newMiddleWidth = maxMiddleWidth;
+
+      setMiddleWidth(newMiddleWidth);
+    };
+
+    const onMouseUp = () => {
+      document.removeEventListener("mousemove", onMouseMove);
+      document.removeEventListener("mouseup", onMouseUp);
+    };
+
+    document.addEventListener("mousemove", onMouseMove);
+    document.addEventListener("mouseup", onMouseUp);
+  };
+
+  // === HANDLE VERTICAL RESIZE ===
+  const handleHorizontalResize = (e) => {
+    e.preventDefault();
+    const startY = e.clientY;
+    const initialHeight = topSectionHeight;
+
+    const onMouseMove = (e) => {
+      const deltaY = e.clientY - startY;
+      let newHeight = initialHeight + deltaY;
+
+      if (newHeight < 100) newHeight = 100; // Minsta höjd för överdelen
+      if (newHeight > window.innerHeight - 200) newHeight = window.innerHeight - 200;
+
+      setTopSectionHeight(newHeight);
+    };
+
+    const onMouseUp = () => {
+      document.removeEventListener("mousemove", onMouseMove);
+      document.removeEventListener("mouseup", onMouseUp);
+    };
+
+    document.addEventListener("mousemove", onMouseMove);
+    document.addEventListener("mouseup", onMouseUp);
+  };
+
+  return (
+    <div className="w-screen h-screen flex flex-col">
+      <Header />
+      <div className="flex flex-grow overflow-hidden relative">
+        
+        {/* Vänsterkolumn */}
+        <div className="h-full border-r border-gray-400" style={{ width: leftWidth }}>
+          <Sidebar />
+        </div>
+
+        {/* Vänster-Mitten Resizer */}
+        <div className="h-full w-2 bg-gray-500 cursor-col-resize" onMouseDown={handleLeftMiddleResize} />
+
+        {/* Mittenkolumn */}
+        <div className="flex flex-col border-r border-gray-400 bg-white" style={{ width: middleWidth }}>
+          {/* Övre Sektionen */}
+          <div style={{ height: topSectionHeight }} className="p-4 overflow-y-auto bg-gray-50">
+            <MainContent />
+          </div>
+
+          {/* Horisontell Resizer */}
+          <div className="h-2 bg-gray-500 cursor-row-resize" onMouseDown={handleHorizontalResize} />
+
+          {/* Nedre Sektionen - Anteckningar */}
+          <div className="flex-1 p-4 overflow-y-auto bg-gray-50">
+            <h2 className="text-xl font-bold mb-2">Anteckningar</h2>
+            <textarea
+              className="w-full h-full border border-gray-300 rounded p-2 focus:outline-none"
+              placeholder="Skriv anteckningar här..."
+            />
+          </div>
+        </div>
+
+        {/* Mitten-Höger Resizer */}
+        <div className="h-full w-2 bg-gray-500 cursor-col-resize" onMouseDown={handleMiddleRightResize} />
+
+        {/* Högerkolumn */}
+        <div className="h-full border-l border-gray-400" style={{ width: rightWidth }}>
+          <GoogleChat />
+        </div>
+      </div>
+      <Footer />
+    </div>
+  );
+}
