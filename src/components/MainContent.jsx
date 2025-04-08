@@ -1,14 +1,19 @@
-export default function MainContent({ darkMode }) {
+export default function MainContent({ darkMode, meeting }) {
   return (
     <div
       className={`p-4 overflow-y-auto h-full ${
-        darkMode ? "bg-gray-800 text-white" : "bg-gray-50 text-black"
+        darkMode ? "bg-gray-800 text-white" : "bg-white text-black"
       }`}
     >
-      <h2 className="text-xl font-bold mb-2">
-        Sammanfattning & Protokoll (MainContent.jsx)
-      </h2>
-      <p>Här visas AI-genererad sammanfattning och protokoll.</p>
+      <h2 className="text-xl font-bold mb-2">Sammanfattning & Protokoll</h2>
+      {meeting ? (
+        <div>
+          <h3 className="text-lg font-bold">{meeting.summary || "Namnlöst möte"}</h3>
+          <p>Detaljer om mötet visas här...</p>
+        </div>
+      ) : (
+        <p>Välj ett möte för att visa detaljer.</p>
+      )}
     </div>
   );
 }

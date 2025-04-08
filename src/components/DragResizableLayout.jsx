@@ -7,41 +7,30 @@ import Header from "./Header";
 import Footer from "./Footer";
 import MainContent from "./MainContent";
 
-export default function DragResizableLayout() {
+export default function DragResizableLayout({ darkMode, toggleDarkMode, session, children }) {
   const [windowWidth, setWindowWidth] = useState(1200);
   const [leftWidth, setLeftWidth] = useState(300);
   const [middleWidth, setMiddleWidth] = useState(600);
   const [topSectionHeight, setTopSectionHeight] = useState(300);
+  const [selectedMeeting, setSelectedMeeting] = useState(null);
+
+  const handleShowMeetingDetails = (meeting) => {
+    setSelectedMeeting(meeting);
+  };
 
   useEffect(() => {
     const updateWidths = () => {
       const width = window.innerWidth;
       setWindowWidth(width);
-      setLeftWidth(width * 0.25);    // 25%
-      setMiddleWidth(width * 0.5);   // 50%
+      setLeftWidth(width * 0.25);
+      setMiddleWidth(width * 0.5);
     };
 
-    updateWidths(); // Kör en gång direkt vid mount
+    updateWidths();
 
     window.addEventListener("resize", updateWidths);
     return () => window.removeEventListener("resize", updateWidths);
   }, []);
-
-  // resten av din kod följer nedan...
-
-
-  const [darkMode, setDarkMode] = useState(false);
-
-  useEffect(() => {
-    const savedDark = localStorage.getItem("darkMode");
-    if (savedDark) setDarkMode(savedDark === "true");
-  }, []);
-
-  useEffect(() => {
-    localStorage.setItem("darkMode", darkMode);
-  }, [darkMode]);
-
-  const toggleDarkMode = () => setDarkMode(!darkMode);
 
   useEffect(() => {
     function handleResize() {
@@ -131,43 +120,59 @@ export default function DragResizableLayout() {
   };
 
   return (
-    <div className={darkMode ? "bg-gray-900 text-white w-screen h-screen flex flex-col" : "bg-white text-black w-screen h-screen flex flex-col"}>
-      <Header darkMode={darkMode} />
-
-
-      <div className="p-2 flex justify-end bg-gray-300 dark:bg-gray-700">
-        <button onClick={toggleDarkMode} className="px-2 py-1 bg-blue-500 text-white rounded">
-          {darkMode ? "Ljust Läge" : "Mörkt Läge"}
-        </button>
-      </div>
-
+    <div
+      className={`w-screen h-screen flex flex-col overflow-hidden ${
+        darkMode ? "bg-gray-900 text-white" : "bg-white text-black"
+      }`}
+    >
+      <Header darkMode={darkMode} toggleDarkMode={toggleDarkMode} session={session} />
       <div className="flex flex-grow overflow-hidden relative">
         <div style={{ width: leftWidth }}>
-          <Sidebar darkMode={darkMode} />
+          <Sidebar
+            darkMode={darkMode}
+            session={session}
+            onShowMeetingDetails={handleShowMeetingDetails}
+          />
         </div>
-        <div className="h-full w-2 bg-gray-500 cursor-col-resize" onMouseDown={handleLeftMiddleResize} />
+        <div
+          className="h-full w-1 bg-gray-500 cursor-col-resize"
+          onMouseDown={handleLeftMiddleResize}
+        />
 
-        <div style={{ width: middleWidth }} className="flex flex-col border-r border-gray-400">
+        <div
+          style={{ width: middleWidth }}
+          className="flex flex-col border-r border-gray-400"
+        >
           <div style={{ height: topSectionHeight }}>
-            <MainContent darkMode={darkMode} />
+            <MainContent darkMode={darkMode} meeting={selectedMeeting} />
           </div>
 
-          <div className="h-2 bg-gray-500 cursor-row-resize" onMouseDown={handleHorizontalResize} />
+          <div
+            className="h-2 bg-gray-500 cursor-row-resize mx-4"
+            onMouseDown={handleHorizontalResize}
+          />
 
           <div className="flex-1 p-4 overflow-y-auto">
-            <textarea className="w-full h-full p-2 border rounded" placeholder="Skriv anteckningar här..." />
+            <textarea
+              className={`w-full h-full p-2 border rounded ${
+                darkMode ? "bg-gray-700 text-white" : "bg-gray-50 text-black"
+              }`}
+              placeholder="Skriv anteckningar här..."
+            />
           </div>
         </div>
 
-        <div className="h-full w-2 bg-gray-500 cursor-col-resize" onMouseDown={handleMiddleRightResize} />
+        <div
+          className="h-full w-2 bg-gray-500 cursor-col-resize"
+          onMouseDown={handleMiddleRightResize}
+        />
 
         <div style={{ width: rightWidth }}>
           <GoogleChat darkMode={darkMode} />
         </div>
       </div>
-
+      {children}
       <Footer darkMode={darkMode} />
-
     </div>
   );
 }

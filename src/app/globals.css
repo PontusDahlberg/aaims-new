@@ -1,10 +1,18 @@
-@import "tailwindcss";
-
+/* filepath: c:\Users\PontusDahlberg\aaims-new\src\app\globals.css */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 /* Här kan du lägga till egna globala stilar om du vill */
+html,
 body {
     font-family: sans-serif;
     margin: 0;
     padding: 0;
     box-sizing: border-box;
+    height: 100%;
+}
+
+.grabbing {
+  cursor: grabbing !important;
 }
