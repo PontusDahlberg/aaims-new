@@ -2,7 +2,7 @@
 
 import { signIn, signOut, useSession } from "next-auth/react";
 
-export default function Header({ darkMode, toggleDarkMode, session }) {
+export default function Header({ darkMode, toggleDarkMode }) {
   const { data: sessionData } = useSession();
   const handleAuth = () => {
     if (sessionData?.user) {

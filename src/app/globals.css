@@ -1,7 +1,41 @@
 /* filepath: c:\Users\PontusDahlberg\aaims-new\src\app\globals.css */
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss/base";
+@import "tailwindcss/components";
+@import "tailwindcss/utilities";
+
+@layer utilities {
+  .pulse-animation {
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  .slide-in {
+    animation: slideIn 0.3s ease-out;
+  }
+
+  .fade-in {
+    animation: fadeIn 0.3s ease-out;
+  }
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateY(-10px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
 
 /* Här kan du lägga till egna globala stilar om du vill */
 html,
@@ -15,4 +49,92 @@ body {
 
 .grabbing {
   cursor: grabbing !important;
+}
+
+.select-none {
+  user-select: none;
+}
+
+.dark {
+  @apply bg-gray-900 text-white;
+}
+
+/* Resizer styles */
+.cursor-col-resize {
+  cursor: col-resize;
+}
+
+.cursor-row-resize {
+  cursor: row-resize;
+}
+
+/* Prevent text selection while resizing */
+.resizing * {
+  user-select: none;
+}
+
+/* Custom scrollbar styles */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #9ca3af; /* gray-400 - normal state */
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #8b5cf6; /* purple-500 - hover state */
+}
+
+::-webkit-scrollbar-thumb:active {
+  background: #7c3aed; /* purple-600 - active/dragging state */
+}
+
+/* För Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #9ca3af transparent;
+}
+
+*:hover {
+  scrollbar-color: #8b5cf6 transparent;
+}
+
+/* App layout styles */
+#root {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.main-content {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+.calendar-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+.calendar-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1rem;
 }

@@ -6,172 +6,201 @@ import GoogleChat from "./GoogleChat";
 import Header from "./Header";
 import Footer from "./Footer";
 import MainContent from "./MainContent";
+import { useSession } from "next-auth/react";
 
-export default function DragResizableLayout({ darkMode, toggleDarkMode, session, children }) {
-  const [windowWidth, setWindowWidth] = useState(1200);
-  const [leftWidth, setLeftWidth] = useState(300);
-  const [middleWidth, setMiddleWidth] = useState(600);
-  const [topSectionHeight, setTopSectionHeight] = useState(300);
+export default function DragResizableLayout({ children }) {
+  const { data: session } = useSession();
+  const [darkMode, setDarkMode] = useState(false);
+  const [leftWidth, setLeftWidth] = useState(400); // Ändra standardbredd från 300 till 400
+  const [rightWidth, setRightWidth] = useState(300);
   const [selectedMeeting, setSelectedMeeting] = useState(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [windowWidth, setWindowWidth] = useState(0);
+  const [deletedMeetings, setDeletedMeetings] = useState([]);
 
-  const handleShowMeetingDetails = (meeting) => {
-    setSelectedMeeting(meeting);
-  };
+  const toggleDarkMode = () => setDarkMode(!darkMode);
+
+  const handleShowMeetingDetails = (meeting) => setSelectedMeeting(meeting);
 
   useEffect(() => {
-    const updateWidths = () => {
-      const width = window.innerWidth;
-      setWindowWidth(width);
-      setLeftWidth(width * 0.25);
-      setMiddleWidth(width * 0.5);
+    setWindowWidth(window.innerWidth);
+
+    if (typeof window === 'undefined') return;
+
+    const handleResize = () => {
+      setWindowWidth(window.innerWidth);
     };
 
-    updateWidths();
-
-    window.addEventListener("resize", updateWidths);
-    return () => window.removeEventListener("resize", updateWidths);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
   }, []);
 
+  // Lägg till useEffect för att beräkna optimal bredd vid start
   useEffect(() => {
-    function handleResize() {
-      setWindowWidth(window.innerWidth);
+    if (typeof window !== 'undefined') {
+      // Optimal bredd för sidebar (max 50% av fönsterbredden)
+      const optimalWidth = Math.min(
+        400, // Minimum bredd för att visa mötestitel
+        window.innerWidth * 0.5 // Max 50% av fönsterbredden
+      );
+      setLeftWidth(optimalWidth);
     }
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  const rightWidth = Math.max(100, windowWidth - leftWidth - middleWidth);
+  // Uppdatera hanteringen av deletedMeetings
+  useEffect(() => {
+    const handleStorageChange = () => {
+      try {
+        const savedItems = localStorage.getItem('deleted-items');
+        if (savedItems) {
+          const parsedItems = JSON.parse(savedItems);
+          setDeletedMeetings(parsedItems);
+        }
+      } catch (error) {
+        console.error('Error handling storage change:', error);
+      }
+    };
 
-  const handleLeftMiddleResize = (e) => {
-    e.preventDefault();
-    const startX = e.clientX;
-    const initLeft = leftWidth;
-    const initMiddle = middleWidth;
+    // Lyssna på både storage och custom event
+    window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('deletedItemsUpdated', handleStorageChange);
+    
+    // Initial load
+    handleStorageChange();
 
-    function onMouseMove(e) {
-      const delta = e.clientX - startX;
-      let newLeft = initLeft + delta;
-      let newMiddle = initMiddle - delta;
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('deletedItemsUpdated', handleStorageChange);
+    };
+  }, []);
 
-      if (newLeft < 80) newLeft = 80;
-      if (newMiddle < 200) newMiddle = 200;
-
-      setLeftWidth(newLeft);
-      setMiddleWidth(newMiddle);
-    }
-
-    function onMouseUp() {
-      document.removeEventListener("mousemove", onMouseMove);
-      document.removeEventListener("mouseup", onMouseUp);
-    }
-
-    document.addEventListener("mousemove", onMouseMove);
-    document.addEventListener("mouseup", onMouseUp);
+  // Uppdatera deletedMeetings när localStorage ändras
+  const updateDeletedItems = (newItems) => {
+    localStorage.setItem('deleted-items', JSON.stringify(newItems));
+    setDeletedMeetings(newItems);
+    window.dispatchEvent(new Event('deletedItemsUpdated'));
   };
 
-  const handleMiddleRightResize = (e) => {
-    e.preventDefault();
-    const startX = e.clientX;
-    const initMiddle = middleWidth;
+  // Beräkna mittenkolumnens bredd
+  const middleWidth = windowWidth - leftWidth - rightWidth;
 
-    function onMouseMove(e) {
-      const delta = e.clientX - startX;
-      let newMiddle = initMiddle + delta;
-
-      if (newMiddle < 200) newMiddle = 200;
-      const maxMiddle = windowWidth - leftWidth - 100;
-      if (newMiddle > maxMiddle) newMiddle = maxMiddle;
-
-      setMiddleWidth(newMiddle);
+  const handleLeftResize = (e) => {
+    // Prevent default endast för mus-events
+    if (!e.touches) {
+      e.preventDefault();
     }
+    setIsDragging(true);
+    const startX = e.touches ? e.touches[0].clientX : e.clientX;
+    const startWidth = leftWidth;
 
-    function onMouseUp() {
-      document.removeEventListener("mousemove", onMouseMove);
-      document.removeEventListener("mouseup", onMouseUp);
-    }
+    const handleMouseMove = (e) => {
+      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+      const newWidth = Math.max(200, Math.min(startWidth + clientX - startX, windowWidth - 600));
+      setLeftWidth(newWidth);
+    };
 
-    document.addEventListener("mousemove", onMouseMove);
-    document.addEventListener("mouseup", onMouseUp);
+    const handleEnd = () => {
+      setIsDragging(false);
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleEnd);
+      document.removeEventListener('touchmove', handleMouseMove);
+      document.removeEventListener('touchend', handleEnd);
+      document.body.classList.remove('select-none');
+    };
+
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleEnd);
+    document.addEventListener('touchmove', handleMouseMove, { passive: true });
+    document.addEventListener('touchend', handleEnd);
+    document.body.classList.add('select-none');
   };
 
-  const handleHorizontalResize = (e) => {
-    e.preventDefault();
-    const startY = e.clientY;
-    const initHeight = topSectionHeight;
-
-    function onMouseMove(e) {
-      const deltaY = e.clientY - startY;
-      let newHeight = initHeight + deltaY;
-
-      if (newHeight < 50) newHeight = 50;
-      if (newHeight > window.innerHeight - 100)
-        newHeight = window.innerHeight - 100;
-
-      setTopSectionHeight(newHeight);
+  const handleRightResize = (e) => {
+    // Prevent default endast för mus-events
+    if (!e.touches) {
+      e.preventDefault();
     }
+    setIsDragging(true);
+    const startX = e.touches ? e.touches[0].clientX : e.clientX;
+    const startWidth = rightWidth;
 
-    function onMouseUp() {
-      document.removeEventListener("mousemove", onMouseMove);
-      document.removeEventListener("mouseup", onMouseUp);
-    }
+    const handleMouseMove = (e) => {
+      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+      const newWidth = Math.max(200, Math.min(startWidth - (clientX - startX), windowWidth - 600));
+      setRightWidth(newWidth);
+    };
 
-    document.addEventListener("mousemove", onMouseMove);
-    document.addEventListener("mouseup", onMouseUp);
+    const handleEnd = () => {
+      setIsDragging(false);
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleEnd);
+      document.removeEventListener('touchmove', handleMouseMove);
+      document.removeEventListener('touchend', handleEnd);
+      document.body.classList.remove('select-none');
+    };
+
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleEnd);
+    document.addEventListener('touchmove', handleMouseMove, { passive: true });
+    document.addEventListener('touchend', handleEnd);
+    document.body.classList.add('select-none');
   };
 
   return (
-    <div
-      className={`w-screen h-screen flex flex-col overflow-hidden ${
-        darkMode ? "bg-gray-900 text-white" : "bg-white text-black"
-      }`}
-    >
+    <div className={`h-screen flex flex-col ${darkMode ? "dark" : ""}`}>
       <Header darkMode={darkMode} toggleDarkMode={toggleDarkMode} session={session} />
-      <div className="flex flex-grow overflow-hidden relative">
-        <div style={{ width: leftWidth }}>
+      
+      <div className="flex-1 flex overflow-hidden">
+        {/* Vänster kolumn */}
+        <div
+          className="relative flex-shrink-0 overflow-hidden"
+          style={{ width: `${leftWidth}px` }}
+        >
           <Sidebar
             darkMode={darkMode}
             session={session}
             onShowMeetingDetails={handleShowMeetingDetails}
+            deletedMeetings={deletedMeetings}
+            setDeletedMeetings={setDeletedMeetings}
           />
-        </div>
-        <div
-          className="h-full w-1 bg-gray-500 cursor-col-resize"
-          onMouseDown={handleLeftMiddleResize}
-        />
-
-        <div
-          style={{ width: middleWidth }}
-          className="flex flex-col border-r border-gray-400"
-        >
-          <div style={{ height: topSectionHeight }}>
-            <MainContent darkMode={darkMode} meeting={selectedMeeting} />
-          </div>
-
           <div
-            className="h-2 bg-gray-500 cursor-row-resize mx-4"
-            onMouseDown={handleHorizontalResize}
+            className={`absolute right-0 top-0 w-1 h-full cursor-col-resize hover:bg-purple-500 ${
+              isDragging ? 'bg-purple-500' : 'bg-gray-300'
+            }`}
+            onMouseDown={handleLeftResize}
+            onTouchStart={handleLeftResize}
           />
-
-          <div className="flex-1 p-4 overflow-y-auto">
-            <textarea
-              className={`w-full h-full p-2 border rounded ${
-                darkMode ? "bg-gray-700 text-white" : "bg-gray-50 text-black"
-              }`}
-              placeholder="Skriv anteckningar här..."
-            />
-          </div>
         </div>
 
+        {/* Mittenkolumn */}
         <div
-          className="h-full w-2 bg-gray-500 cursor-col-resize"
-          onMouseDown={handleMiddleRightResize}
-        />
+          className="flex-1 overflow-hidden"
+          style={{ minWidth: '400px' }}
+        >
+          <MainContent 
+            darkMode={darkMode} 
+            meeting={selectedMeeting} 
+            deletedMeetings={deletedMeetings} 
+            updateDeletedItems={updateDeletedItems}  // Skicka med den nya funktionen
+          />
+        </div>
 
-        <div style={{ width: rightWidth }}>
+        {/* Höger kolumn */}
+        <div
+          className="relative flex-shrink-0 overflow-hidden"
+          style={{ width: `${rightWidth}px` }}
+        >
+          <div
+            className={`absolute left-0 top-0 w-1 h-full cursor-col-resize hover:bg-purple-500 ${
+              isDragging ? 'bg-purple-500' : 'bg-gray-300'
+            }`}
+            onMouseDown={handleRightResize}
+            onTouchStart={handleRightResize}
+          />
           <GoogleChat darkMode={darkMode} />
         </div>
       </div>
-      {children}
+
       <Footer darkMode={darkMode} />
     </div>
   );

@@ -1,0 +1,25 @@
+Google client id
+
+1010425294045-mtpej0eas0q3bjn9hid3op56rvj6u60h.apps.googleusercontent.com
+
+
+Client secret
+
+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
+
+
+Assembly AI API
+
+375a089a99de4e05a06d6550339da295
+
+
+
+NextAuth
+
+NEXTAUTH_SECRET=aR51BA%s5llZluQFQH7{TeY.21MwIk
+
+
+
+Gemini API key
+
+AIzaSyDnyfMvolm_1ohBC2TLyNuAhtAORDLPJpM

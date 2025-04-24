@@ -1,0 +1,25 @@
+.aaims-record-button {
+  margin: 0 8px;
+  padding: 8px 16px;
+  border-radius: 4px;
+  font-family: 'Google Sans', Roboto, Arial, sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  transition: all 0.2s ease;
+}
+
+.aaims-record-button:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.aaims-record-button.recording {
+  background: rgba(234, 67, 53, 0.9);
+}
+
+.aaims-record-button.recording:hover {
+  background: rgba(234, 67, 53, 1);
+}

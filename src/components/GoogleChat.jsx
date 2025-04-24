@@ -6,8 +6,7 @@ export default function GoogleChat({ darkMode }) {
       }`}
     >
       <h2 className="text-lg font-bold mb-4">Google Chat</h2>
-      <p>Här ska man kunna välja chat-grupp eller integrera Google Chat.</p>
-      <p>Denna text kommer från GoogleChat.js .</p>
+      <p>Google Chat integration kommer här</p>
     </div>
   );
 }
